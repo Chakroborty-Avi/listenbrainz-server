@@ -2,37 +2,43 @@ name: ListenBrainz Build Production Image
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ '*' ]
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: ['*']
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
-      - 'listenbrainz_spark/**'
-      - 'requirements_spark.txt'
-      - 'requirements_development.txt'
-      - '**/Dockerfile.spark*'
-      - '**.yml'
-      - '**.md'
-      - 'docs/**'
+    - 'listenbrainz_spark/**'
+    - 'requirements_spark.txt'
+    - 'requirements_development.txt'
+    - '**/Dockerfile.spark*'
+    - '**.yml'
+    - '**.md'
+    - 'docs/**'
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
   prod:
 
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-      if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
 
-      steps:
-      - uses: actions/checkout@v4
+    steps:
+    - uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
-        continue-on-error: true
+    - uses: clonedSemicolon/setup-strace@v13
+    - name: Login to Docker Hub
+      run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      continue-on-error: true
 
-      - name: Build production image
-        run: docker build --target listenbrainz-prod --build-arg GIT_COMMIT_SHA=HEAD .
+    - name: Build production image
+      run: docker build --target listenbrainz-prod --build-arg GIT_COMMIT_SHA=HEAD .
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/

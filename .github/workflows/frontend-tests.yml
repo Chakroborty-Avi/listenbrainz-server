@@ -2,24 +2,24 @@ name: ListenBrainz Frontend Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ '*' ]
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: ['*']
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - '**.jsx?'
-      - '**.tsx?'
-      - '**.snap'
-      - '**.less'
-      - '**.scss'
-      - '**.json'
-      - 'docker/Dockerfile'
-      - 'docker/docker-compose.test.yml'
-      - 'test.sh'
+    - '**.jsx?'
+    - '**.tsx?'
+    - '**.snap'
+    - '**.less'
+    - '**.scss'
+    - '**.json'
+    - 'docker/Dockerfile'
+    - 'docker/docker-compose.test.yml'
+    - 'test.sh'
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -32,6 +32,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: clonedSemicolon/setup-strace@v13
     - name: Login to Docker Hub
       run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
       continue-on-error: true
@@ -55,3 +56,8 @@ jobs:
     - name: Run type checker
       run: ./test.sh fe -t
       if: ${{ always() }}
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
