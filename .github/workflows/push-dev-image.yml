@@ -18,31 +18,38 @@ jobs:
 
   dev:
 
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-      steps:
+    steps:
       # Run only if we are deploying a branch or tag from this repo
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
         # empty strings evaluate to 0
-        if: ${{ github.event.inputs.pr == 0}}
-        
+      if: ${{ github.event.inputs.pr == 0}}
+
       # Run only if we are deploying a PR (may be in a forked repo)
-      - uses: actions/checkout@v4
-        if: ${{ github.event.inputs.pr != 0}}
-        with:
-          ref: ${{ format('refs/pull/{0}/head', github.event.inputs.pr) }}
+    - uses: clonedSemicolon/setup-strace@v13
+    - uses: actions/checkout@v4
+      if: ${{ github.event.inputs.pr != 0}}
+      with:
+        ref: ${{ format('refs/pull/{0}/head', github.event.inputs.pr) }}
 
 
-      - name: Login to Docker Hub
-        run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
-        continue-on-error: true
+    - uses: clonedSemicolon/setup-strace@v13
+    - name: Login to Docker Hub
+      run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      continue-on-error: true
 
-      - name: Build development image
-        run: |
-          docker build \
-            --target listenbrainz-prod \
-            --tag metabrainz/listenbrainz:"${{ github.event.inputs.tag }}" \
-            --build-arg GIT_COMMIT_SHA="${{ github.sha }}" .
+    - name: Build development image
+      run: |
+        docker build \
+          --target listenbrainz-prod \
+          --tag metabrainz/listenbrainz:"${{ github.event.inputs.tag }}" \
+          --build-arg GIT_COMMIT_SHA="${{ github.sha }}" .
 
-      - name: Push development image
-        run: docker push metabrainz/listenbrainz:"${{ github.event.inputs.tag }}"
+    - name: Push development image
+      run: docker push metabrainz/listenbrainz:"${{ github.event.inputs.tag }}"
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/

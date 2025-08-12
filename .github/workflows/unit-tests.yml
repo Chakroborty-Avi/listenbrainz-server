@@ -2,29 +2,29 @@ name: ListenBrainz Server Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ '*' ]
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: ['*']
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
-      - 'listenbrainz_spark/**'
-      - 'requirements_spark.txt'
-      - '**/Dockerfile.spark*'
-      - '**.jsx?'
-      - '**.tsx?'
-      - '**.snap'
-      - 'docker/docker-compose.spark*.yml'
-      - 'docker/prod/**'
-      - 'docker/services/**'
-      - 'docker/spark-cluster-config/**'
-      - 'docs/**'
-      - '**.less'
-      - '**.scss'
-      - '**.md'
+    - 'listenbrainz_spark/**'
+    - 'requirements_spark.txt'
+    - '**/Dockerfile.spark*'
+    - '**.jsx?'
+    - '**.tsx?'
+    - '**.snap'
+    - 'docker/docker-compose.spark*.yml'
+    - 'docker/prod/**'
+    - 'docker/services/**'
+    - 'docker/spark-cluster-config/**'
+    - 'docs/**'
+    - '**.less'
+    - '**.scss'
+    - '**.md'
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -37,6 +37,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: clonedSemicolon/setup-strace@v13
     - name: Create configuration file
       run: cp listenbrainz/config.py.sample listenbrainz/config.py
 
@@ -46,3 +47,8 @@ jobs:
 
     - name: Run tests
       run: ./test.sh
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
